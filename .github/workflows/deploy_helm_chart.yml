@@ -23,11 +23,14 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      # 3. Instalar gke-gcloud-auth-plugin
-      - name: Install GKE Auth Plugin
+      # 3. Instalar google-cloud-sdk y el plugin
+      - name: Install Google Cloud SDK and GKE Auth Plugin
         run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+          sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
 
       # 4. Get GKE Cluster Credentials
       - name: Get GKE Cluster Credentials
