@@ -24,7 +24,7 @@ jobs:
 
       - name: Get GKE Cluster Credentials
         run: gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
-          --region ${{ secrets.CLUSTER_LOCATION }}
+          --zone ${{ secrets.CLUSTER_LOCATION }}
         env:
           USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
