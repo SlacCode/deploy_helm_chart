@@ -59,4 +59,3 @@ jobs:
       - name: Clean up
         if: always()
         run: rm -f /tmp/key.json
-
