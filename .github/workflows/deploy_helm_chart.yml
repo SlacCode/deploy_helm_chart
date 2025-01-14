@@ -47,3 +47,4 @@ jobs:
         run: |
           helm upgrade --install ping ./helm_chart \
             --namespace default
+
