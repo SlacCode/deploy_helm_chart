@@ -23,9 +23,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Use gcloud CLI
-        run: gcloud info
-
       - name: Set GCP Project
         run: gcloud config set project ${{ secrets.PROJECT_ID }}
 
@@ -40,11 +37,18 @@ jobs:
       - name: Configure Helm for Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
-          helm repo add instance-registry oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry
-          helm repo update
+          helm registry login us-central1-docker.pkg.dev \
+            --username _json_key \
+            --password "${{ secrets.GCP_KEY }}"
+
+      - name: Pull Helm Chart from Artifact Registry
+        run: |
+          helm chart pull oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0
+          helm chart export oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0 \
+            --destination ./charts
 
       - name: Install Helm Chart
         run: |
-          helm upgrade --install ping instance-registry/ping \
+          helm upgrade --install ping ./charts/ping \
             --namespace default \
-            --version 1.0.0
+            --version 0.1.0
