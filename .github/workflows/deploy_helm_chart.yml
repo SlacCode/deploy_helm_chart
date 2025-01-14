@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite ejecutar manualmente el workflow
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,11 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout del código
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Autenticación con GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
@@ -25,24 +23,18 @@ jobs:
       - name: Set GCP Project
         run: gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      # 3. Configuración del acceso al clúster de GKE
-      - name: Install GKE Auth Plugin
-        run: |
-          gcloud components update
-          gcloud components install gke-gcloud-auth-plugin
-
       - name: Get GKE Cluster Credentials
         run: gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
           --region ${{ secrets.CLUSTER_LOCATION }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
-      # 4. Configurar Helm para Artifact Registry
       - name: Configure Helm for Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
           helm repo add instance-registry oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry
           helm repo update
 
-      # 5. Instalar o actualizar el Helm Chart en GKE
       - name: Install Helm Chart
         run: |
           helm upgrade --install ping instance-registry/ping \
