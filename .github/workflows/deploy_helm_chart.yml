@@ -1,5 +1,4 @@
 name: Deploy Helm Chart to GKE
-
 on:
   push:
     branches:
