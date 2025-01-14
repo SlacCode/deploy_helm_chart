@@ -23,11 +23,20 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      # 3. Verify GCP Authentication (optional)
-      - name: Verify GCP Authentication
-        run: gcloud auth list
+      # 3. Get GKE Cluster Credentials
+      - name: Get GKE Cluster Credentials
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
+            --region ${{ secrets.CLUSTER_LOCATION }} \
+            --project ${{ secrets.PROJECT_ID }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
-      # 4. Configure access to Artifact Registry
+      # 4. Verify kubectl Context
+      - name: Verify kubectl Context
+        run: kubectl config current-context
+
+      # 5. Configure access to Artifact Registry
       - name: Configure Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -35,14 +44,14 @@ jobs:
             --username _json_key \
             --password "$(cat /tmp/key.json)"
 
-      # 5. Deploy Helm Chart
+      # 6. Deploy Helm Chart
       - name: Deploy Helm Chart
         run: |
           helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
             --namespace default \
             --version 0.1.0
 
-      # 6. Clean up (optional)
+      # 7. Clean up (optional)
       - name: Clean up
         if: always()
         run: rm -f /tmp/key.json
