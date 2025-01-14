@@ -19,8 +19,8 @@ jobs:
       # 2. Autenticación con Google Cloud
       - name: Authenticate to GCP
         run: |
-          echo '${{ secrets.GCP_KEY }}' > /tmp/key.json
-          gcloud auth activate-service-account --key-file=/tmp/key.json --encoding=base64
+          echo "${{ secrets.GCP_KEY }}" > /tmp/key.json
+          gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
 
       # 3. Verificar la autenticación
