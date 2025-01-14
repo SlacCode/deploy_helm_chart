@@ -1,5 +1,23 @@
-*.dmb
-*.rsc
-*.int
-*.lk
-*.zip
+# Ignorar archivos y carpetas de IntelliJ IDEA
+.idea/
+*.iml
+
+# Ignorar archivos de sistema macOS
+.DS_Store
+
+# Ignorar Terraform files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+.terraformrc
+terraform.rc
+*tfplan*
