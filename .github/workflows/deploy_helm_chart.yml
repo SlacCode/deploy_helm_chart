@@ -12,22 +12,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout del código
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Autenticación con Google Cloud
+      # 2. Autenticate to GCP
       - name: Authenticate to GCP
         run: |
           echo "${{ secrets.GCP_KEY }}" | base64 -d > /tmp/key.json
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      # 3. Verificar la autenticación
+      # 3. Verify GCP Authentication (optional)
       - name: Verify GCP Authentication
         run: gcloud auth list
 
-      # 4. Configurar acceso al Artifact Registry
+      # 4. Configure access to Artifact Registry
       - name: Configure Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -35,14 +35,13 @@ jobs:
             --username _json_key \
             --password "$(cat /tmp/key.json)"
 
-      # 5. Descargar e instalar el chart desde Artifact Registry
-      - name: Deploy Helm Chart
+        # 5. Deploy Helm Chart
         run: |
           helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
             --namespace default \
             --version 0.1.0
 
-      # 6. Limpiar el archivo de clave temporal
+      # 6. Clean up (optional)
       - name: Clean up
         if: always()
         run: rm -f /tmp/key.json
