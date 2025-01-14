@@ -1,0 +1,41 @@
+name: Deploy Helm Chart to GKE
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite ejecutar manualmente el workflow
+
+jobs:
+  deploy:
+    name: Deploy Helm Chart
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Configurar GCP con gcloud
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_KEY }}
+
+      - name: Set GCP Project
+        run: gcloud config set project ${{ secrets.PROJECT_ID }}
+
+      # 2. Configurar acceso al clúster de GKE
+      - name: Get GKE Cluster Credentials
+        run: gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} --region ${{ secrets.CLUSTER_LOCATION }}
+
+      # 3. Configurar Helm para acceder al Artifact Registry
+      - name: Configure Helm for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          helm repo add instance-registry oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry
+          helm repo update
+
+      # 4. Instalar el Helm chart en el clúster
+      - name: Install Helm Chart
+        run: |
+          helm upgrade --install ping instance-registry/ping --namespace default --version 0.1.0

@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ping.fullname" . }}-service-check
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "1"
+  labels:
+    app.kubernetes.io/name: {{ include "ping.name" . }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: service-check
+          image: curlimages/curl:7.85.0
+          command: ["sh", "-c"]
+          args:
+            - >
+              until curl -sf http://random-service:8080/health; do
+                echo "Waiting for random-service to be up...";
+                sleep 5;
+              done;
+              echo "Random service is up!";
+          restartPolicy: Never
+      restartPolicy: OnFailure
