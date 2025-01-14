@@ -12,37 +12,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Authenticate to GCP
       - name: Authenticate to GCP
         run: |
           echo "${{ secrets.GCP_KEY }}" | base64 -d > /tmp/key.json
           gcloud auth activate-service-account --key-file=/tmp/key.json
-          gcloud config set project shining-relic-447714-i8
+          gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      - name: Assign Permissions to Service Account
-        run: |
-          gcloud projects add-iam-policy-binding shining-relic-447714-i8 \
-            --member="serviceAccount:helm-service-account@shining-relic-447714-i8.iam.gserviceaccount.com" \
-            --role="roles/container.clusterViewer"
-
-      - name: Install Google Cloud SDK and GKE Auth Plugin
-        run: |
-          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-          sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
-          curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
-
+      # 3. Get GKE Cluster Credentials
       - name: Get GKE Cluster Credentials
         run: |
           gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
             --region ${{ secrets.CLUSTER_LOCATION }} \
-            --project shining-relic-447714-i8
+            --project ${{ secrets.PROJECT_ID }}
         env:
           USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
+      # 4. Verify kubectl Context
+      - name: Verify kubectl Context
+        run: kubectl config current-context
+
+      # 5. Configure access to Artifact Registry
       - name: Configure Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -50,13 +44,14 @@ jobs:
             --username _json_key \
             --password "$(cat /tmp/key.json)"
 
+      # 6. Deploy Helm Chart
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --install ping oci://us-central1-docker.pkg.dev/shining-relic-447714-i8/instance-registry/ping \
+          helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
             --namespace default \
             --version 0.1.0
 
+      # 7. Clean up (optional)
       - name: Clean up
         if: always()
         run: rm -f /tmp/key.json
-
