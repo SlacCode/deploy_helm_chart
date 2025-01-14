@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Autenticate to GCP
+      # 2. Authenticate to GCP
       - name: Authenticate to GCP
         run: |
           echo "${{ secrets.GCP_KEY }}" | base64 -d > /tmp/key.json
@@ -35,7 +35,8 @@ jobs:
             --username _json_key \
             --password "$(cat /tmp/key.json)"
 
-        # 5. Deploy Helm Chart
+      # 5. Deploy Helm Chart
+      - name: Deploy Helm Chart
         run: |
           helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
             --namespace default \
