@@ -20,35 +20,22 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_KEY }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Set GCP Project
-        run: gcloud config set project ${{ secrets.PROJECT_ID }}
-
-      - name: Get GKE Cluster Credentials
+      - name: Authenticate to Artifact Registry
         run: |
-          gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
-          --region ${{ secrets.CLUSTER_LOCATION }} \
-          --project ${{ secrets.PROJECT_ID }}
-        env:
-          USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
-
-      - name: Configure Helm for Artifact Registry
-        run: |
+          echo "${{ secrets.GCP_KEY }}" | gcloud auth activate-service-account --key-file=-
           gcloud auth configure-docker us-central1-docker.pkg.dev
-          helm registry login us-central1-docker.pkg.dev \
+
+      - name: Login to Artifact Registry
+        run: |
+          echo "${{ secrets.GCP_KEY }}" | helm registry login us-central1-docker.pkg.dev \
             --username _json_key \
-            --password "${{ secrets.GCP_KEY }}"
+            --password-stdin
 
       - name: Pull Helm Chart from Artifact Registry
         run: |
           helm chart pull oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0
-          helm chart export oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0 \
-            --destination ./charts
 
       - name: Install Helm Chart
         run: |
-          helm upgrade --install ping ./charts/ping \
-            --namespace default \
-            --version 0.1.0
+          helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0 \
+            --namespace default
