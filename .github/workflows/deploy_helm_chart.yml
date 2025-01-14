@@ -12,39 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Authenticate to GCP
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      # 3. Activate the service account for Artifact Registry
-      - name: Authenticate to Artifact Registry
+      - name: Authenticate to GCP
         run: |
           echo "${{ secrets.GCP_KEY }}" > /tmp/key.json
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      # 4. Login to Artifact Registry with Helm
-      - name: Login to Artifact Registry
+      - name: Authenticate Helm to Artifact Registry
         run: |
-          echo "${{ secrets.GCP_KEY }}" | helm registry login us-central1-docker.pkg.dev \
+          helm registry login us-central1-docker.pkg.dev \
             --username _json_key \
-            --password-stdin
+            --password "$(cat /tmp/key.json)"
 
-      # 5. Pull the Helm Chart from Artifact Registry
       - name: Pull Helm Chart from Artifact Registry
         run: |
           helm chart pull oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0
-          helm chart export oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0 --destination ./helm_chart
 
-      # 6. Install the Helm Chart in the GKE cluster
       - name: Install Helm Chart
         run: |
-          helm upgrade --install ping ./helm_chart \
+          helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping:0.1.0 \
             --namespace default
-
