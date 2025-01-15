@@ -21,5 +21,5 @@ spec:
                 sleep 5;
               done;
               echo "Random service is up!";
-          restartPolicy: Never
+          restartPolicy: OnFailure
       restartPolicy: OnFailure

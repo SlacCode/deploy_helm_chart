@@ -26,7 +26,11 @@ appVersion: "1.16.0"
 # Nueva información para compatibilidad con OCI y empuje al Artifact Registry
 annotations:
   artifacthub.io/description: "A Helm chart for Kubernetes with OCI support"
+
+# Dependencias requeridas
 dependencies:
   - name: common
-    version: "0.3.0"
+    version: "2.27.0"
     repository: "https://charts.bitnami.com/bitnami"
+
+
