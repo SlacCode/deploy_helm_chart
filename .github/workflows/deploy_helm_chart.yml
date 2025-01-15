@@ -42,6 +42,26 @@ jobs:
         env:
           USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
+      # Paso 3: Instalar Helm
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      # Paso 4: Configurar kubectl para interactuar con GKE
+      - name: Set up kubectl for GKE
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }} --project ${{ secrets.GCP_PROJECT_ID }}
+
+      # Paso 5: Desplegar el chart de Helm
+      - name: Deploy using Helm
+        run: |
+          helm upgrade --install my-release oci://ghcr.io/your-repo/your-chart --namespace default --set image.tag=latest
+
+      # Paso 6: Verificar el estado de los pods
+      - name: Check pod status
+        run: |
+          kubectl get pods --namespace default
+      
       # 5. Verify kubectl Context
       - name: Verify kubectl Context
         run: kubectl config current-context
@@ -61,7 +81,3 @@ jobs:
             --namespace default \
             --version 0.1.0
 
-      # 8. Clean up (optional)
-      - name: Clean up
-        if: always()
-        run: rm -f /tmp/key.json
