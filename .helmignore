@@ -5,3 +5,4 @@
 output/
 templates/tests/
 *.md
+dummy.txt
