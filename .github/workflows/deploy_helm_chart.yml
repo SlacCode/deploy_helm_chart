@@ -23,15 +23,15 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
 
-      # 3. Install GKE Auth Plugin
-      - name: Install GKE Auth Plugin
+      # 3. Install Required Tools
+      - name: Install Required Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
           echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
           curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
           sudo apt-get update
-          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+          sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
 
       # 4. Get GKE Cluster Credentials
       - name: Get GKE Cluster Credentials
@@ -46,32 +46,29 @@ jobs:
       - name: Verify kubectl Context
         run: kubectl config current-context
 
-      # 6. Configure access to Artifact Registry
-      - name: Configure Artifact Registry
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
-          helm registry login us-central1-docker.pkg.dev \
-            --username _json_key \
-            --password "$(cat /tmp/key.json)"
-
-      # 7. Download Helm Dependencies
+      # 6. Download Helm Dependencies
       - name: Download Helm Dependencies
         run: |
           helm dependency update
 
-      # 8. Package Helm Chart
+      # 7. Package Helm Chart
       - name: Package Helm Chart
         run: |
           helm package . --destination ./output
 
-      # 9. Push Helm Chart to Artifact Registry
+      # 8. Push Helm Chart to Artifact Registry
       - name: Push Helm Chart to Artifact Registry
         run: |
           helm push ./output/ping-0.1.0.tgz oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry
 
-      # 10. Deploy Helm Chart from Artifact Registry
+      # 9. Deploy Helm Chart from Artifact Registry
       - name: Deploy Helm Chart from Artifact Registry
         run: |
           helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
             --namespace default \
             --version 0.1.0
+
+      # 10. Clean up Temporary Files
+      - name: Clean up Temporary Files
+        if: always()
+        run: rm -f /tmp/key.json ./output/*.tgz
