@@ -53,11 +53,16 @@ jobs:
         env:
           USE_GKE_GCLOUD_AUTH_PLUGIN: "true"
 
-      # 6. Verify kubectl Context
+      # 6. Adjust API Server Configurations (Optional)
+      - name: Adjust API Server Config
+        run: |
+          kubectl patch cm kube-apiserver -n kube-system --type merge -p '{"data":{"max-request-bytes":"6291456"}}'
+
+      # 7. Verify kubectl Context
       - name: Verify kubectl Context
         run: kubectl config current-context
 
-      # 7. Configure access to Artifact Registry
+      # 8. Configure access to Artifact Registry
       - name: Configure Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -65,22 +70,22 @@ jobs:
             --username _json_key \
             --password "$(cat /tmp/key.json)"
 
-      # 8. Download Helm Dependencies
+      # 9. Download Helm Dependencies
       - name: Download Helm Dependencies
         run: |
           helm dependency update
 
-      # 9. Package Helm Chart
+      # 10. Package Helm Chart
       - name: Package Helm Chart
         run: |
           helm package . --destination ./output
 
-      # 10. Push Helm Chart to Artifact Registry
+      # 11. Push Helm Chart to Artifact Registry
       - name: Push Helm Chart to Artifact Registry
         run: |
           helm push ./output/ping-0.1.0.tgz oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry
 
-      # 11. Deploy Helm Chart from Artifact Registry
+      # 12. Deploy Helm Chart from Artifact Registry
       - name: Deploy Helm Chart from Artifact Registry
         run: |
           helm upgrade --install ping oci://us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/instance-registry/ping \
