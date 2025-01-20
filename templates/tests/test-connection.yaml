@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "ping.fullname" . }}-test-connection"
+  labels:
+    {{- include "ping.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  containers:
+    # Validación de conectividad HTTP con wget
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['--spider', '--timeout=5', '{{ include "ping.fullname" . }}:{{ .Values.service.port }}']
+
+    # Validación de resolución DNS con nslookup
+    - name: nslookup
+      image: busybox
+      command: ['nslookup']
+      args: ['{{ include "ping.fullname" . }}']
+
+    # Validación avanzada con curl
+    - name: curl
+      image: curlimages/curl
+      command: ['curl']
+      args: ['-f', '-s', '-o', '/dev/null', '{{ include "ping.fullname" . }}:{{ .Values.service.port }}/health']
+
+  restartPolicy: Never
