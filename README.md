@@ -1,64 +1,28 @@
 # **Deploy Helm Chart to GKE**
 
-Este proyecto permite desplegar un Helm Chart en un clúster de Google Kubernetes Engine (GKE) utilizando GitHub Actions. Proporciona un pipeline CI/CD completo con autenticación segura, gestión de dependencias y pruebas automatizadas.
+Este proyecto permite desplegar un Helm Chart en un clúster de Google Kubernetes Engine (GKE) utilizando GitHub Actions y Terraform. Ofrece un pipeline CI/CD completo con autenticación segura, gestión de dependencias y pruebas automatizadas, además de infraestructura declarativa para la creación y configuración de los recursos necesarios.
 
-## **Requisitos previos**
+### **Requisitos previos**
 
 Antes de ejecutar este proyecto, asegúrate de cumplir con los siguientes requisitos:
 
 ### **Herramientas necesarias**
-- [Git](https://git-scm.com/)
-- [Helm v3.9+](https://helm.sh/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 
-## **Infraestructura con Terraform**
+- Git
+- Helm v3.9+
+- kubectl
+- Google Cloud SDK
+- Terraform
 
-El proyecto incluye una configuración con Terraform dentro de la rama principal (`main`). Esta configuración automatiza la creación y configuración de los recursos necesarios en Google Cloud Platform (GCP) para garantizar un despliegue óptimo y reproducible.
-
-### **Recursos creados con Terraform**
-- **Clúster de GKE**: Creación automática en la región y zona especificada.
-- **Redes de VPC**: Configuración de subredes y reglas de firewall.
-- **Artifact Registry**: Creación de un repositorio para almacenar los Helm Charts.
-- **Cuentas de servicio**: Configuración de permisos como `roles/container.admin` y `roles/artifactregistry.writer`.
-
-### **Pasos para usar Terraform**
-1. Configurar variables en Terraform: Actualiza el archivo `terraform/terraform.tfvars` con la información específica de tu proyecto:
-
-   ```hcl
-   project_id     = "tu-proyecto-id"
-   region         = "us-central1"
-   cluster_name   = "mi-cluster"
-   ```
-
-2. Inicializar y aplicar Terraform: Ejecuta los siguientes comandos desde la carpeta terraform:
-
-   ```bash
-   terraform init
-   terraform plan
-   terraform apply
-   ```
-
-# **Configuraciones necesarias en Google Cloud Platform (GCP)** 
+### **Configuraciones necesarias en Google Cloud Platform (GCP)**
 
 1. Cuenta de servicio configurada con permisos adecuados:
 
 - roles/container.admin
 - roles/artifactregistry.writer
+- Credenciales de la cuenta de servicio: Descarga el archivo JSON de credenciales y conviértelo a base64. Configura el secreto como GCP_KEY en GitHub.
   
-2. Credenciales de la cuenta de servicio: Descarga el archivo JSON de credenciales y conviértelo a base64. Configura el secreto como - - GCP_KEY en GitHub.
-
-3. Habilitar APIs necesarias:
-
-- Kubernetes Engine API
-- Artifact Registry API
-
-# **Configuración del clúster GKE**
-
-- Un clúster de GKE creado y configurado en la región y zona deseadas.
-- El clúster debe estar conectado al proyecto de GCP especificado.
-  
-# **Estructura del proyecto**
+### **Estructura del proyecto**
 
 ```plaintext
 deploy_helm_chart/
@@ -90,9 +54,11 @@ deploy_helm_chart/
 └── dummy.txt                    # Archivo de ejemplo para pruebas
 ```
 
-# **Cómo ejecutar el proyecto**
+### **Cómo ejecutar el proyecto**
 
-1. Configurar secretos en GitHub Añade los siguientes secretos en tu repositorio:
+1. Configurar secretos en GitHub. 
+
+Añade los siguientes secretos en tu repositorio:
 
 - GCP_KEY: Credenciales de la cuenta de servicio en formato base64.
 - PROJECT_ID: ID del proyecto de GCP.
@@ -134,13 +100,30 @@ helm upgrade --install ping ./output/ping-0.1.0.tgz --namespace default
 helm test ping --namespace default
 ```
 
-# **Pruebas automatizadas**
+### **Soluciones por ejercicio**
 
-El proyecto incluye un archivo de prueba que valida:
+Reto 1: Despliegue en GKE
 
-- Conectividad HTTP: Comprueba que el servicio responde correctamente.
-- Resolución DNS: Asegura que el nombre DNS del servicio es válido.
-- Disponibilidad del endpoint /health: Verifica su estado con curl.
+- El despliegue del Helm Chart en un clúster de GKE se realiza mediante un pipeline CI/CD automatizado. La configuración está en .github/workflows/deploy_helm_chart.yml.
+- Los recursos definidos incluyen configuraciones para deployment.yaml, service.yaml, y otras plantillas Helm.
+
+Reto 2: Infraestructura declarativa
+
+- Herramienta utilizada: Terraform.
+- La configuración de Terraform está incluida en la carpeta terraform/. Los archivos main.tf, variables.tf, y outputs.tf automatizan la creación del clúster de GKE, redes VPC y cuentas de servicio.
+
+Reto 3: Pipeline CI/CD
+
+- Integración de Terraform: El pipeline ejecuta terraform init y terraform apply antes del despliegue de Helm.
+- Integración de Helm: Se actualizan dependencias, se empaqueta el Helm Chart, y se despliega automáticamente en el clúster de GKE.
+
+### **Pruebas automatizadas**
+
+El proyecto incluye un archivo de prueba (templates/tests/) que valida:
+
+1. Conectividad HTTP: Comprueba que el servicio responde correctamente.
+2. Resolución DNS: Asegura que el nombre DNS del servicio es válido.
+3. Disponibilidad del endpoint /health: Verifica su estado.
 
 Ejecuta las pruebas manualmente con:
 
@@ -148,15 +131,7 @@ Ejecuta las pruebas manualmente con:
 helm test ping --namespace default
 ```
 
-# **Manejo de errores comunes**
-
-Error: Request entity too large
-
-Aumenta el límite de tamaño en tu clúster GKE editando la configuración del servidor API:
-
-```bash
-kubectl edit cm kube-apiserver -n kube-system
-```
+### **Pruebas automatizadas**
 
 Error: No such file or directory
 
@@ -166,10 +141,34 @@ Asegúrate de que las dependencias de Helm estén actualizadas y que el subchart
 helm dependency update
 ```
 
-# **Mejores prácticas implementadas**
+### **Manejo de errores comunes**
 
-1. Reutilización de recursos existentes: Utiliza recursos compartidos (common) para garantizar la modularidad y evitar duplicaciones.
-2. Gestión segura de credenciales: Se utiliza GitHub Secrets para manejar credenciales sensibles.
-3. Compatibilidad de configuraciones: Todas las configuraciones son compatibles con Kubernetes y Helm v3.9+.
-4. Pipeline automatizado: Proceso CI/CD que asegura la entrega continua y pruebas automatizadas.
-5. Pruebas avanzadas: Validaciones de conectividad, disponibilidad y resolución DNS.
+Error: Request entity too large
+
+- Aumenta el límite de tamaño en el servidor API de Kubernetes:
+  
+```bash
+kubectl edit cm kube-apiserver -n kube-system
+```
+
+Agrega:
+
+```bash
+--max-request-bytes=6291456
+```
+
+Error: No such file or directory
+
+- Solución:
+  
+```bash
+helm dependency update
+```
+
+### **Mejores prácticas implementadas**
+
+1. Reutilización de recursos existentes: Se utiliza el subchart common para evitar duplicación de recursos.
+2. Gestión segura de credenciales: Uso de GitHub Secrets para credenciales sensibles.
+3. Infraestructura declarativa: Configuración de infraestructura con Terraform.
+4. Pipeline CI/CD: Automatización del despliegue con GitHub Actions.
+5. Pruebas automatizadas: Validaciones completas del despliegue y conectividad.
